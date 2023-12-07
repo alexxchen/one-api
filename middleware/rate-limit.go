@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"time"
+	"strings"
 )
 
 var timeFormat = "2006-01-02T15:04:05.000Z"
@@ -60,7 +61,17 @@ func redisRateLimiter(c *gin.Context, maxRequestNum int, duration int64, mark st
 }
 
 func memoryRateLimiter(c *gin.Context, maxRequestNum int, duration int64, mark string) {
-	key := mark + c.ClientIP()
+	var key string
+	if "TA" == mark {
+		key = c.Request.Header.Get("Authorization")
+		key = strings.TrimPrefix(key, "Bearer ")
+		key = strings.TrimPrefix(key, "sk-")
+		parts := strings.Split(key, "-")
+		key = parts[0]
+		key = mark + key
+	} else {
+		key = mark + c.ClientIP()
+	}
 	if !inMemoryRateLimiter.Request(key, maxRequestNum, duration) {
 		c.Status(http.StatusTooManyRequests)
 		c.Abort()
@@ -88,6 +99,10 @@ func GlobalWebRateLimit() func(c *gin.Context) {
 
 func GlobalAPIRateLimit() func(c *gin.Context) {
 	return rateLimitFactory(common.GlobalApiRateLimitNum, common.GlobalApiRateLimitDuration, "GA")
+}
+
+func TokenAPIRateLimit() func(c *gin.Context) {
+	return rateLimitFactory(common.TokenApiRateLimitNum, common.TokenApiRateLimitDuration, "TA")
 }
 
 func CriticalRateLimit() func(c *gin.Context) {

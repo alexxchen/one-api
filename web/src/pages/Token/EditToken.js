@@ -13,10 +13,11 @@ const EditToken = () => {
     name: '',
     remain_quota: isEdit ? 0 : 500000,
     expired_time: -1,
-    unlimited_quota: false
+    unlimited_quota: false,
+    remain_count: isEdit ? 0 : 200,
   };
   const [inputs, setInputs] = useState(originInputs);
-  const { name, remain_quota, expired_time, unlimited_quota } = inputs;
+  const { name, remain_quota, expired_time, unlimited_quota, remain_count } = inputs;
   const navigate = useNavigate();
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -66,6 +67,7 @@ const EditToken = () => {
     if (!isEdit && inputs.name === '') return;
     let localInputs = inputs;
     localInputs.remain_quota = parseInt(localInputs.remain_quota);
+    localInputs.remain_count = parseInt(localInputs.remain_count);
     if (localInputs.expired_time !== -1) {
       let time = Date.parse(localInputs.expired_time);
       if (isNaN(time)) {
@@ -145,6 +147,18 @@ const EditToken = () => {
               placeholder={'请输入额度'}
               onChange={handleInputChange}
               value={remain_quota}
+              autoComplete='new-password'
+              type='number'
+              disabled={unlimited_quota}
+            />
+          </Form.Field>
+          <Form.Field>
+            <Form.Input
+              label={`次数`}
+              name='remain_count'
+              placeholder={'请输入次数'}
+              onChange={handleInputChange}
+              value={remain_count}
               autoComplete='new-password'
               type='number'
               disabled={unlimited_quota}

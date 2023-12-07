@@ -122,6 +122,9 @@ var (
 	GlobalApiRateLimitNum            = GetOrDefault("GLOBAL_API_RATE_LIMIT", 180)
 	GlobalApiRateLimitDuration int64 = 3 * 60
 
+	TokenApiRateLimitNum            = GetOrDefault("TOKEN_API_RATE_LIMIT", 180)
+	TokenApiRateLimitDuration int64 = 3 * 60
+
 	GlobalWebRateLimitNum            = GetOrDefault("GLOBAL_WEB_RATE_LIMIT", 60)
 	GlobalWebRateLimitDuration int64 = 3 * 60
 

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { API, copy, showError, showSuccess, showWarning, timestamp2string } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
-import { renderQuota } from '../helpers/render';
+import { renderQuota, renderNumber } from '../helpers/render';
 
 const COPY_OPTIONS = [
   { key: 'next', text: 'ChatGPT Next Web', value: 'next' },

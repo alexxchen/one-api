@@ -295,10 +295,18 @@ const TokensTable = () => {
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                sortToken('remain_count');
+                sortToken('remain_count_three');
               }}
             >
-              剩余次数
+              剩余GPT3.5次数
+            </Table.HeaderCell>
+            <Table.HeaderCell
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                sortToken('remain_count_four');
+              }}
+            >
+              剩余GPT4次数
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -334,7 +342,8 @@ const TokensTable = () => {
                   <Table.Cell>{renderStatus(token.status)}</Table.Cell>
                   <Table.Cell>{renderQuota(token.used_quota)}</Table.Cell>
                   <Table.Cell>{token.unlimited_quota ? '无限制' : renderQuota(token.remain_quota, 2)}</Table.Cell>
-                  <Table.Cell>{token.unlimited_quota ? '无限制' : renderNumber(token.remain_count)}</Table.Cell>
+                  <Table.Cell>{token.unlimited_quota ? '无限制' : renderNumber(token.remain_count_three)}</Table.Cell>
+                  <Table.Cell>{token.unlimited_quota ? '无限制' : renderNumber(token.remain_count_four)}</Table.Cell>
                   <Table.Cell>{renderTimestamp(token.created_time)}</Table.Cell>
                   <Table.Cell>{token.expired_time === -1 ? '永不过期' : renderTimestamp(token.expired_time)}</Table.Cell>
                   <Table.Cell>
@@ -362,7 +371,7 @@ const TokensTable = () => {
                         />
                       </Button.Group>
                       {' '}
-                      <Button.Group color='blue' size={'small'}>
+                      {/* <Button.Group color='blue' size={'small'}>
                         <Button
                             size={'small'}
                             positive
@@ -383,7 +392,7 @@ const TokensTable = () => {
                             trigger={<></>}   
                           />
                       </Button.Group>
-                      {' '}
+                      {' '} */}
                       <Popup
                         trigger={
                           <Button size='small' negative>

@@ -19,7 +19,8 @@ type Token struct {
 	RemainQuota    int    `json:"remain_quota" gorm:"default:0"`
 	UnlimitedQuota bool   `json:"unlimited_quota" gorm:"default:false"`
 	UsedQuota      int    `json:"used_quota" gorm:"default:0"` // used quota
-	RemainCount    int    `json:"remain_count" gorm:"default:0"`
+	RemainCountThree int    `json:"remain_count_three" gorm:"default:0"`
+	RemainCountFour  int    `json:"remain_count_four" gorm:"default:0"`
 }
 
 func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
@@ -58,7 +59,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			}
 			return nil, errors.New("该令牌已过期")
 		}
-		if !token.UnlimitedQuota && (token.RemainQuota <= 0 || token.RemainCount < 1) {
+		if !token.UnlimitedQuota && (token.RemainQuota <= 0 || (token.RemainCountThree < 1 && token.RemainCountFour < 1)) {
 			if !common.RedisEnabled {
 				// in this case, we can make sure the token is exhausted
 				token.Status = common.TokenStatusExhausted
@@ -103,7 +104,7 @@ func (token *Token) Insert() error {
 // Update Make sure your token's fields is completed, because this will update non-zero values
 func (token *Token) Update() error {
 	var err error
-	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "remain_count").Updates(token).Error
+	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "remain_count_three", "remain_count_four").Updates(token).Error
 	return err
 }
 
@@ -131,7 +132,7 @@ func DeleteTokenById(id int, userId int) (err error) {
 	return token.Delete()
 }
 
-func IncreaseTokenQuota(id int, quota int) (err error) {
+func IncreaseTokenQuota(modelName string, id int, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
@@ -139,22 +140,36 @@ func IncreaseTokenQuota(id int, quota int) (err error) {
 		addNewRecord(BatchUpdateTypeTokenQuota, id, quota)
 		return nil
 	}
-	return increaseTokenQuota(id, quota)
+	return increaseTokenQuota(modelName, id, quota)
 }
 
-func increaseTokenQuota(id int, quota int) (err error) {
-	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"remain_quota":  gorm.Expr("remain_quota + ?", quota),
-			"used_quota":    gorm.Expr("used_quota - ?", quota),
-			"accessed_time": common.GetTimestamp(),
-			"remain_count": gorm.Expr("remain_count + ?", 1),
-		},
-	).Error
+func increaseTokenQuota(modelName string, id int, quota int) (err error) {
+	if modelName == "gpt-3.5-turbo" {
+		err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota + ?", quota),
+				"used_quota":    gorm.Expr("used_quota - ?", quota),
+				"accessed_time": common.GetTimestamp(),
+				"remain_count_three": gorm.Expr("remain_count_three + ?", 1),
+			},
+		).Error
+	}
+
+	if modelName == "gpt-4" {
+		err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota + ?", quota),
+				"used_quota":    gorm.Expr("used_quota - ?", quota),
+				"accessed_time": common.GetTimestamp(),
+				"remain_count_four": gorm.Expr("remain_count_four + ?", 1),
+			},
+		).Error
+	}
 	return err
 }
 
-func DecreaseTokenQuota(id int, quota int) (err error) {
+func DecreaseTokenQuota(modelName string, id int, quota int, count int) (err error) {
+
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
@@ -162,22 +177,35 @@ func DecreaseTokenQuota(id int, quota int) (err error) {
 		addNewRecord(BatchUpdateTypeTokenQuota, id, -quota)
 		return nil
 	}
-	return decreaseTokenQuota(id, quota)
+	return decreaseTokenQuota(modelName, id, quota, count)
 }
 
-func decreaseTokenQuota(id int, quota int) (err error) {
-	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"remain_quota":  gorm.Expr("remain_quota - ?", quota),
-			"used_quota":    gorm.Expr("used_quota + ?", quota),
-			"accessed_time": common.GetTimestamp(),
-			"remain_count": gorm.Expr("remain_count - ?", 1),
-		},
-	).Error
+func decreaseTokenQuota(modelName string, id int, quota int, count int) (err error) {
+	if modelName == "gpt-3.5-turbo" {
+		err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota - ?", quota),
+				"used_quota":    gorm.Expr("used_quota + ?", quota),
+				"accessed_time": common.GetTimestamp(),
+				"remain_count_three": gorm.Expr("remain_count_three - ?", count),
+			},
+		).Error
+	}
+
+	if modelName == "gpt-4" {
+		err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota - ?", quota),
+				"used_quota":    gorm.Expr("used_quota + ?", quota),
+				"accessed_time": common.GetTimestamp(),
+				"remain_count_four": gorm.Expr("remain_count_four - ?", count),
+			},
+		).Error
+	}
 	return err
 }
 
-func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
+func PreConsumeTokenQuota(modelName string, tokenId int, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
@@ -188,9 +216,20 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 	if !token.UnlimitedQuota && token.RemainQuota < quota {
 		return errors.New("令牌额度不足")
 	}
-	if !token.UnlimitedQuota && token.RemainCount < 1 {
-		return errors.New("令牌次数不足")
+
+
+	if modelName == "gpt-3.5-turbo" {
+		if !token.UnlimitedQuota && token.RemainCountThree < 1 {
+			return errors.New("令牌gpt-3.5次数不足")
+		}
 	}
+
+	if modelName == "gpt-4" {
+		if !token.UnlimitedQuota && token.RemainCountFour < 1 {
+			return errors.New("令牌gpt-4次数不足")
+		}
+	}
+
 	userQuota, err := GetUserQuota(token.UserId)
 	if err != nil {
 		return err
@@ -221,7 +260,7 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 		}()
 	}
 	if !token.UnlimitedQuota {
-		err = DecreaseTokenQuota(tokenId, quota)
+		err = DecreaseTokenQuota(modelName, tokenId, quota, 2)
 		if err != nil {
 			return err
 		}
@@ -230,7 +269,7 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 	return err
 }
 
-func PostConsumeTokenQuota(tokenId int, quota int) (err error) {
+func PostConsumeTokenQuota(modelName string, tokenId int, quota int) (err error) {
 	token, err := GetTokenById(tokenId)
 	if quota > 0 {
 		err = DecreaseUserQuota(token.UserId, quota)
@@ -242,9 +281,9 @@ func PostConsumeTokenQuota(tokenId int, quota int) (err error) {
 	}
 	if !token.UnlimitedQuota {
 		if quota > 0 {
-			err = DecreaseTokenQuota(tokenId, quota)
+			err = DecreaseTokenQuota(modelName, tokenId, quota, 1)
 		} else {
-			err = IncreaseTokenQuota(tokenId, -quota)
+			err = IncreaseTokenQuota(modelName, tokenId, -quota)
 		}
 		if err != nil {
 			return err

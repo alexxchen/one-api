@@ -60,7 +60,7 @@ func batchUpdate() {
 					common.SysError("failed to batch update user quota: " + err.Error())
 				}
 			case BatchUpdateTypeTokenQuota:
-				err := increaseTokenQuota(key, value)
+				err := increaseTokenQuota("gpt-4", key, value)
 				if err != nil {
 					common.SysError("failed to batch update token quota: " + err.Error())
 				}

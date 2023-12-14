@@ -162,7 +162,7 @@ func relayImageHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 	var textResponse ImageResponse
 
 	defer func(ctx context.Context) {
-		err := model.PostConsumeTokenQuota(tokenId, quota)
+		err := model.PostConsumeTokenQuota(imageRequest.Model, tokenId, quota)
 		if err != nil {
 			common.SysError("error consuming token remain quota: " + err.Error())
 		}

@@ -96,7 +96,8 @@ func GetTokenStatus(c *gin.Context) {
 		"total_used":      0, // not supported currently
 		"total_available": token.RemainQuota,
 		"expires_at":      expiredAt * 1000,
-		"total_count":     token.RemainCount,
+		"remain_count_gpt35":    token.RemainCountThree,
+		"remain_count_gpt4":     token.RemainCountFour,
 	})
 }
 
@@ -126,7 +127,9 @@ func AddToken(c *gin.Context) {
 		ExpiredTime:    token.ExpiredTime,
 		RemainQuota:    token.RemainQuota,
 		UnlimitedQuota: token.UnlimitedQuota,
-		RemainCount:    token.RemainCount,
+		RemainCountThree:   token.RemainCountThree,
+		RemainCountFour:    token.RemainCountFour,
+
 	}
 	err = cleanToken.Insert()
 	if err != nil {
@@ -196,7 +199,7 @@ func UpdateToken(c *gin.Context) {
 			})
 			return
 		}
-		if cleanToken.Status == common.TokenStatusExhausted && (cleanToken.RemainQuota <= 0 || cleanToken.RemainCount < 1) && !cleanToken.UnlimitedQuota {
+		if cleanToken.Status == common.TokenStatusExhausted && (cleanToken.RemainQuota <= 0 || (cleanToken.RemainCountThree < 1 && cleanToken.RemainCountFour < 1)) && !cleanToken.UnlimitedQuota {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "令牌可用额度已用尽，无法启用，请先修改令牌剩余额度，或者设置为无限额度",
@@ -212,7 +215,8 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.ExpiredTime = token.ExpiredTime
 		cleanToken.RemainQuota = token.RemainQuota
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
-		cleanToken.RemainCount = token.RemainCount
+		cleanToken.RemainCountThree = token.RemainCountThree
+		cleanToken.RemainCountFour = token.RemainCountFour
 	}
 	err = cleanToken.Update()
 	if err != nil {

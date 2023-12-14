@@ -70,7 +70,7 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 		preConsumedQuota = 0
 	}
 	if preConsumedQuota > 0 {
-		err := model.PreConsumeTokenQuota(tokenId, preConsumedQuota)
+		err := model.PreConsumeTokenQuota(ttsRequest.Model, tokenId, preConsumedQuota)
 		if err != nil {
 			return errorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)
 		}
@@ -158,7 +158,7 @@ func relayAudioHelper(c *gin.Context, relayMode int) *OpenAIErrorWithStatusCode 
 			defer func(ctx context.Context) {
 				go func() {
 					// negative means add quota back for token & user
-					err := model.PostConsumeTokenQuota(tokenId, -preConsumedQuota)
+					err := model.PostConsumeTokenQuota(ttsRequest.Model, tokenId, -preConsumedQuota)
 					if err != nil {
 						common.LogError(ctx, fmt.Sprintf("error rollback pre-consumed quota: %s", err.Error()))
 					}

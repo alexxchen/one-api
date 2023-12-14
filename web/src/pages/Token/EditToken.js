@@ -14,10 +14,11 @@ const EditToken = () => {
     remain_quota: isEdit ? 0 : 500000,
     expired_time: -1,
     unlimited_quota: false,
-    remain_count: isEdit ? 0 : 200,
+    remain_count_three: isEdit ? 0 : 2000,
+    remain_count_four: isEdit ? 0 : 200,
   };
   const [inputs, setInputs] = useState(originInputs);
-  const { name, remain_quota, expired_time, unlimited_quota, remain_count } = inputs;
+  const { name, remain_quota, expired_time, unlimited_quota, remain_count_three, remain_count_four } = inputs;
   const navigate = useNavigate();
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -67,7 +68,8 @@ const EditToken = () => {
     if (!isEdit && inputs.name === '') return;
     let localInputs = inputs;
     localInputs.remain_quota = parseInt(localInputs.remain_quota);
-    localInputs.remain_count = parseInt(localInputs.remain_count);
+    localInputs.remain_count_three = parseInt(localInputs.remain_count_three);
+    localInputs.remain_count_four = parseInt(localInputs.remain_count_four);
     if (localInputs.expired_time !== -1) {
       let time = Date.parse(localInputs.expired_time);
       if (isNaN(time)) {
@@ -154,11 +156,23 @@ const EditToken = () => {
           </Form.Field>
           <Form.Field>
             <Form.Input
-              label={`次数`}
-              name='remain_count'
-              placeholder={'请输入次数'}
+              label={`gpt3.5次数`}
+              name='remain_count_three'
+              placeholder={'请输入gpt3.5次数'}
               onChange={handleInputChange}
-              value={remain_count}
+              value={remain_count_three}
+              autoComplete='new-password'
+              type='number'
+              disabled={unlimited_quota}
+            />
+          </Form.Field>
+          <Form.Field>
+            <Form.Input
+              label={`gpt4次数`}
+              name='remain_count_four'
+              placeholder={'请输入gpt4次数'}
+              onChange={handleInputChange}
+              value={remain_count_four}
               autoComplete='new-password'
               type='number'
               disabled={unlimited_quota}

@@ -2,6 +2,9 @@ FROM node:16 as builder
 
 WORKDIR /build
 COPY web/package.json .
+RUN npm config set fetch-retries 3
+RUN npm config set fetch-retry-mintimeout 20000
+RUN npm config set fetch-retry-maxtimeout 120000 
 RUN npm install
 COPY ./web .
 COPY ./VERSION .
@@ -15,7 +18,7 @@ ENV GO111MODULE=on \
 
 WORKDIR /build
 ADD go.mod go.sum ./
-RUN go mod download
+RUN GOPROXY="https://goproxy.io" go mod download
 COPY . .
 COPY --from=builder /build/build ./web/build
 RUN go build -ldflags "-s -w -X 'one-api/common.Version=$(cat VERSION)' -extldflags '-static'" -o one-api
